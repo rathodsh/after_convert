@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoverge VM Inventory — Local Environments</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:#f7f6f2; --card:#ffffff; --border:#e3e1d8; --text:#1a1a18; --muted:#6b6a65;
+    --win25-c:#0F5CAD; --win25-bg:#E6F1FB; --win25-b:#B5D4F4;
+    --win22-c:#1A4A8A; --win22-bg:#D9EBFA; --win22-b:#80BCF0;
+    --win19-c:#0D3A6A; --win19-bg:#CCE2F5; --win19-b:#5AA8E8;
+    --win11-c:#4A2D8A; --win11-bg:#EEECfE; --win11-b:#C0B8F4;
+    --ubuntu-c:#B15900; --ubuntu-bg:#FFF4E0; --ubuntu-b:#FFC570;
+    --ubuntu24-c:#8B4000; --ubuntu24-bg:#FFF0D6; --ubuntu24-b:#FFB050;
+    --ubuntu20-c:#6B3000; --ubuntu20-bg:#FFE8C8; --ubuntu20-b:#FF9030;
+    --oracle-c:#9B3A00; --oracle-bg:#FFF0E6; --oracle-b:#FFBB99;
+    --rocky-c:#1E6B3A; --rocky-bg:#E2F5EA; --rocky-b:#72D49A;
+    --web-c:#0F6E56; --web-bg:#E1F5EE; --web-b:#9FE1CB;
+    --db-c:#185FA5; --db-bg:#E6F1FB; --db-b:#B5D4F4;
+    --app-c:#BA7517; --app-bg:#FAEEDA; --app-b:#FAC775;
+    --dc-c:#3C3489; --dc-bg:#EEEDFE; --dc-b:#CECBF6;
+    --build-c:#993556; --build-bg:#FBEAF0; --build-b:#F4C0D1;
+    --mon-c:#5F5E5A; --mon-bg:#F1EFE8; --mon-b:#D3D1C7;
+    --pur-prod-c:#0F6E56; --pur-prod-bg:#E1F5EE; --pur-prod-b:#9FE1CB;
+    --pur-dev-c:#BA7517;  --pur-dev-bg:#FAEEDA;  --pur-dev-b:#FAC775;
+    --pur-test-c:#3C3489; --pur-test-bg:#EEEDFE; --pur-test-b:#CECBF6;
+    --pur-int-c:#5F5E5A;  --pur-int-bg:#F1EFE8;  --pur-int-b:#D3D1C7;
+    --pur-ad-c:#0078D4;   --pur-ad-bg:#EFF6FC;   --pur-ad-b:#C7E0F4;
+    --pur-bk-c:#9B3A00;   --pur-bk-bg:#FFF0E6;   --pur-bk-b:#FFBB99;
+    --pur-rd-c:#1E6B3A;   --pur-rd-bg:#E2F5EA;   --pur-rd-b:#72D49A;
+    --pur-qa-c:#993556;   --pur-qa-bg:#FBEAF0;   --pur-qa-b:#F4C0D1;
+    --pur-oth-c:#5F5E5A;  --pur-oth-bg:#F1EFE8;  --pur-oth-b:#D3D1C7;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'IBM Plex Sans',sans-serif; background:var(--bg); color:var(--text); padding:32px 24px; }
+
+  .page-hdr { text-align:center; margin-bottom:28px; }
+  .page-hdr h1 { font-size:21px; font-weight:600; }
+  .page-hdr p  { font-size:12px; color:var(--muted); margin-top:4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom:24px; }
+  .leg-title { font-size:11px; font-weight:600; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; margin-bottom:8px; }
+  .legend { display:flex; flex-wrap:wrap; gap:7px; }
+  .leg { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); }
+  .leg-dot { width:9px; height:9px; border-radius:2px; flex-shrink:0; }
+  .leg-sep { width:1px; height:14px; background:var(--border); margin:0 4px; }
+
+  /* Controls */
+  .controls { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:24px; align-items:center; }
+  .controls input, .controls select {
+    padding:7px 11px; font-size:12px; font-family:inherit;
+    border:1px solid var(--border); border-radius:6px;
+    background:#fff; color:var(--text); outline:none;
+  }
+  .controls input { flex:1; min-width:200px; }
+  .stat { font-size:12px; color:var(--muted); margin-left:auto; white-space:nowrap; }
+
+  /* Root node */
+  .root { text-align:center; margin-bottom:0; }
+  .root-box { display:inline-block; background:var(--text); color:#fff; font-size:14px; font-weight:600; padding:11px 36px; border-radius:8px; }
+  .vconn { display:flex; justify-content:center; }
+  .vline { width:2px; height:26px; background:var(--border); }
+
+  /* Physical server grid — 3 cols */
+  .phys-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+
+  /* Physical server block */
+  .phys-block { border:2px solid var(--border); border-radius:10px; overflow:hidden; }
+  .phys-hdr {
+    background:var(--text); color:#fff;
+    font-size:12px; font-weight:600; letter-spacing:.6px; text-transform:uppercase;
+    padding:8px 14px; display:flex; align-items:center; gap:8px;
+  }
+  .phys-count { font-size:10px; opacity:.6; font-weight:400; margin-left:auto; }
+  .phys-body { padding:10px 8px; display:flex; flex-direction:column; gap:7px; background:var(--bg); }
+
+  /* VM card */
+  .vm-card { background:#fff; border:1px solid var(--border); border-radius:7px; padding:9px 11px; }
+  .vm-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:6px; }
+  .vm-name { font-size:12px; font-weight:600; font-family:'IBM Plex Mono',monospace; color:var(--text); word-break:break-all; flex:1; }
+  .os-badge { font-size:9px; font-weight:600; padding:2px 7px; border-radius:20px; white-space:nowrap; flex-shrink:0; border:1px solid; }
+  .vm-types { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px; }
+  .type-tag { font-size:10px; padding:2px 7px; border-radius:20px; border:1px solid; font-weight:500; white-space:nowrap; }
+  .vm-footer { display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top:1px solid var(--border); gap:8px; }
+  .vm-owner { font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .vm-ip { font-size:10px; color:var(--muted); font-family:'IBM Plex Mono',monospace; white-space:nowrap; }
+  .vm-meta2 { display:flex; justify-content:space-between; align-items:center; padding-top:5px; margin-top:5px; border-top:1px dashed var(--border); }
+  .pur-badge { font-size:9px; font-weight:600; padding:1px 7px; border-radius:20px; border:1px solid; white-space:nowrap; }
+  .sr-label { font-size:9px; color:var(--muted); font-family:'IBM Plex Mono',monospace; }
+
+  /* OS badge colors */
+  .os-win25  { background:var(--win25-bg);  color:var(--win25-c);  border-color:var(--win25-b);  }
+  .os-win22  { background:var(--win22-bg);  color:var(--win22-c);  border-color:var(--win22-b);  }
+  .os-win19  { background:var(--win19-bg);  color:var(--win19-c);  border-color:var(--win19-b);  }
+  .os-win11  { background:var(--win11-bg);  color:var(--win11-c);  border-color:var(--win11-b);  }
+  .os-ubuntu { background:var(--ubuntu-bg); color:var(--ubuntu-c); border-color:var(--ubuntu-b); }
+  .os-u24    { background:var(--ubuntu24-bg);color:var(--ubuntu24-c);border-color:var(--ubuntu24-b);}
+  .os-u20    { background:var(--ubuntu20-bg);color:var(--ubuntu20-c);border-color:var(--ubuntu20-b);}
+  .os-oracle { background:var(--oracle-bg); color:var(--oracle-c); border-color:var(--oracle-b); }
+  .os-rocky  { background:var(--rocky-bg);  color:var(--rocky-c);  border-color:var(--rocky-b);  }
+
+  /* Type tag colors */
+  .tt-web   { background:var(--web-bg);   color:var(--web-c);   border-color:var(--web-b);   }
+  .tt-db    { background:var(--db-bg);    color:var(--db-c);    border-color:var(--db-b);    }
+  .tt-app   { background:var(--app-bg);   color:var(--app-c);   border-color:var(--app-b);   }
+  .tt-dc    { background:var(--dc-bg);    color:var(--dc-c);    border-color:var(--dc-b);    }
+  .tt-build { background:var(--build-bg); color:var(--build-c); border-color:var(--build-b); }
+  .tt-mon   { background:var(--mon-bg);   color:var(--mon-c);   border-color:var(--mon-b);   }
+
+  /* Purpose badge colors */
+  .pur-prod { background:var(--pur-prod-bg); color:var(--pur-prod-c); border-color:var(--pur-prod-b); }
+  .pur-dev  { background:var(--pur-dev-bg);  color:var(--pur-dev-c);  border-color:var(--pur-dev-b);  }
+  .pur-test { background:var(--pur-test-bg); color:var(--pur-test-c); border-color:var(--pur-test-b); }
+  .pur-int  { background:var(--pur-int-bg);  color:var(--pur-int-c);  border-color:var(--pur-int-b);  }
+  .pur-ad   { background:var(--pur-ad-bg);   color:var(--pur-ad-c);   border-color:var(--pur-ad-b);   }
+  .pur-bk   { background:var(--pur-bk-bg);   color:var(--pur-bk-c);   border-color:var(--pur-bk-b);   }
+  .pur-rd   { background:var(--pur-rd-bg);   color:var(--pur-rd-c);   border-color:var(--pur-rd-b);   }
+  .pur-qa   { background:var(--pur-qa-bg);   color:var(--pur-qa-c);   border-color:var(--pur-qa-b);   }
+  .pur-oth  { background:var(--pur-oth-bg);  color:var(--pur-oth-c);  border-color:var(--pur-oth-b);  }
+
+  .no-result { grid-column:1/-1; text-align:center; color:var(--muted); padding:2rem; font-size:14px; }
+
+  @media(max-width:1100px) { .phys-grid { grid-template-columns:repeat(2,1fr); } }
+  @media(max-width:640px)  { .phys-grid { grid-template-columns:1fr; } body{padding:16px 10px;} }
+  @media print { .controls{display:none;} body{padding:12px;background:#fff;} .phys-grid{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+
+<div class="page-hdr">
+  <h1>🖥️ Synoverge VM Inventory — Local Environments</h1>
+  <p>Physical Host → Virtual Machine · 6 Physical Servers · 59 VMs · Sr. No · Purpose · Type · OS · IP · Owner · Updated 2026</p>
+</div>
+
+<!-- Legend -->
+<div class="legend-wrap">
+  <div class="leg-title">Operating System</div>
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:var(--win25-c)"></div>Windows Server 2025</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--win22-c)"></div>Windows Server 2022</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--win19-c)"></div>Windows Server 2019</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--win11-c)"></div>Windows 11 Pro</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--ubuntu-c)"></div>Ubuntu</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--ubuntu24-c)"></div>Ubuntu 24.04</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--ubuntu20-c)"></div>Ubuntu 20.04</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--oracle-c)"></div>Oracle Linux</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--rocky-c)"></div>Rocky Linux</div>
+    <div class="leg-sep"></div>
+    <div class="leg"><div class="leg-dot" style="background:var(--web-c);border-radius:50%"></div>Web Server</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--db-c);border-radius:50%"></div>DB Server</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--app-c);border-radius:50%"></div>Application</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--dc-c);border-radius:50%"></div>Domain / AD</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--build-c);border-radius:50%"></div>Build / CI-CD</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--mon-c);border-radius:50%"></div>Other</div>
+    <div class="leg-sep"></div>
+    <div class="leg"><div class="leg-dot" style="background:var(--pur-prod-c);border-radius:50%"></div>Production</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--pur-dev-c);border-radius:50%"></div>Development</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--pur-test-c);border-radius:50%"></div>Test</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--pur-int-c);border-radius:50%"></div>Internal</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--pur-ad-c);border-radius:50%"></div>AD</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--pur-bk-c);border-radius:50%"></div>Backup</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--pur-rd-c);border-radius:50%"></div>R&D / K8s</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--pur-qa-c);border-radius:50%"></div>QA</div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <input type="text" id="search" placeholder="🔍  Search VM name, owner, IP, type, purpose, OS…" oninput="render()">
+  <select id="physFilter" onchange="render()">
+    <option value="">All Physical Servers</option>
+    <option>Titan</option><option>Pluto</option><option>Surya</option>
+    <option>Uranus</option><option>Tejas</option><option>Jupiter</option>
+  </select>
+  <select id="purposeFilter" onchange="render()">
+    <option value="">All Purposes</option>
+    <option value="production">Production</option>
+    <option value="development">Development</option>
+    <option value="test">Test</option>
+    <option value="internal">Internal</option>
+    <option value="ad">AD / Domain</option>
+    <option value="backup">Backup</option>
+    <option value="r&d">R&D</option>
+    <option value="qa">QA</option>
+    <option value="kubernetes">Kubernetes</option>
+  </select>
+  <select id="osFilter" onchange="render()">
+    <option value="">All OS</option>
+    <option value="windows server 2025">Windows Server 2025</option>
+    <option value="windows server 2022">Windows Server 2022</option>
+    <option value="windows server 2019">Windows Server 2019</option>
+    <option value="windows 11">Windows 11</option>
+    <option value="ubuntu">Ubuntu</option>
+    <option value="oracle">Oracle Linux</option>
+    <option value="rocky">Rocky Linux</option>
+  </select>
+  <select id="typeFilter" onchange="render()">
+    <option value="">All Types</option>
+    <option value="web">Web Server</option>
+    <option value="db">DB Server</option>
+    <option value="application">Application</option>
+    <option value="domain">Domain Controller</option>
+    <option value="build">Build / CI-CD</option>
+    <option value="backup">Backup</option>
+    <option value="kubernetes">Kubernetes</option>
+    <option value="llm">LLM</option>
+    <option value="monitoring">Monitoring</option>
+  </select>
+  <span class="stat" id="stat"></span>
+</div>
+
+<!-- Root node -->
+<div class="root"><div class="root-box">🏢 &nbsp;Synoverge — Local VM Infrastructure</div></div>
+<div class="vconn"><div class="vline"></div></div>
+
+<!-- Grid -->
+<div class="phys-grid" id="main"></div>
+
+<p style="text-align:center;font-size:11px;color:#bbb;margin-top:28px;">Synoverge Technologies Pvt. Ltd. · VM Inventory · Local Environments · Updated 2026</p>
+
+<script>
+const VMS = [
+  // ── TITAN (7 VMs) ──
+  {sr:1,  phys:"Titan",   name:"SYNO-RDWEB",               owner:"Infra",                        purpose:"AD",                     type:"Domain Controller",      os:"Windows Server 2022 Standard",      ip:"192.168.2.184"},
+  {sr:2,  phys:"Titan",   name:"WALNUT",                    owner:"Infra",                        purpose:"Internal Server",        type:"File Server",            os:"Windows Server 2025 Standard",      ip:"192.168.2.212"},
+  {sr:14, phys:"Titan",   name:"SVT-SRV-Moodle-Prod",       owner:"Dhara Agarwal",                purpose:"Internal Server",        type:"Web Server, DB Server",  os:"Ubuntu",                            ip:"192.168.2.81"},
+  {sr:16, phys:"Titan",   name:"EXAM",                      owner:"Dhara Agarwal",                purpose:"Production Server",      type:"Web Server, DB Server",  os:"Ubuntu",                            ip:"192.168.2.80"},
+  {sr:17, phys:"Titan",   name:"Internal_APP(KMS)",         owner:"Dhara Agarwal",                purpose:"Production Server",      type:"Web Server",             os:"Ubuntu",                            ip:"192.168.2.122"},
+  {sr:25, phys:"Titan",   name:"TestKnot-playwright",       owner:"Mehul Halari",                 purpose:"Development Server",     type:"Web Server",             os:"Ubuntu",                            ip:"192.168.2.161"},
+  {sr:42, phys:"Titan",   name:"SVT-SRV-WAZUH",             owner:"Infra",                        purpose:"Internal Server",        type:"Monitoring",             os:"Ubuntu Server 20.04",               ip:"192.168.2.114"},
+  // ── PLUTO (10 VMs) ──
+  {sr:3,  phys:"Pluto",   name:"SVT-SRV-120",               owner:"Vaseem / Jayant",              purpose:"Production Server",      type:"Web Server",             os:"Ubuntu",                            ip:"192.168.2.143"},
+  {sr:4,  phys:"Pluto",   name:"SVT-SRV-19",                owner:"Dhwanil Shah",                 purpose:"Development Server",     type:"Build CI/CD",            os:"Ubuntu",                            ip:"192.168.3.7"},
+  {sr:5,  phys:"Pluto",   name:"SVT-SRV-81",                owner:"Dhwanil Shah",                 purpose:"Internal Server",        type:"Web Server",             os:"Ubuntu",                            ip:"192.168.3.79"},
+  {sr:7,  phys:"Pluto",   name:"SVT-SRV-EPulse-03",         owner:"Vaseem Lahori",                purpose:"Internal Server",        type:"Web Server, DB Server",  os:"Ubuntu",                            ip:"192.168.2.152"},
+  {sr:19, phys:"Pluto",   name:"SVT-Graffna",               owner:"Dhwanil Shah",                 purpose:"Production Server",      type:"Web Server",             os:"Ubuntu",                            ip:"192.168.2.119"},
+  {sr:24, phys:"Pluto",   name:"ZyloQuest Gamification",    owner:"Jayant Shah",                  purpose:"Production Server",      type:"Application",            os:"Ubuntu",                            ip:"192.168.2.190"},
+  {sr:35, phys:"Pluto",   name:"SVT-SRV-SONARREPORT",       owner:"Riyan Shaikh",                 purpose:"Sonar Report",           type:"Report Server",          os:"Ubuntu",                            ip:"192.168.2.249"},
+  {sr:41, phys:"Pluto",   name:"SVT-SRV-VOIZVAULT",         owner:"Kruti Dave",                   purpose:"Internal Server",        type:"Application",            os:"Ubuntu Server 24.04",               ip:"192.168.3.53"},
+  {sr:49, phys:"Pluto",   name:"SVT-SRV-POSTGRESQL",        owner:"Sumit Udani",                  purpose:"Internal Server",        type:"DB Server",              os:"Linux (ubuntu 24.04)",              ip:"192.168.3.103"},
+  {sr:52, phys:"Pluto",   name:"SVT-SRV-VOIZVAULT-PROD",    owner:"Kruti Dave",                   purpose:"Internal Server",        type:"Application",            os:"Ubuntu Server 24.04",               ip:"192.168.3.57"},
+  // ── SURYA (19 VMs) ──
+  {sr:8,  phys:"Surya",   name:"ADDS-2",                    owner:"Infra",                        purpose:"AD",                     type:"Domain Controller",      os:"Windows Server 2025 Standard",      ip:"192.168.2.3"},
+  {sr:9,  phys:"Surya",   name:"SVT-SRV-ePulse",            owner:"Manish Patel",                 purpose:"Production Server",      type:"Web Server, DB Server",  os:"Windows Server 2025 Standard",      ip:"192.168.2.253"},
+  {sr:10, phys:"Surya",   name:"SVT-SRV-MB3(MB4)",          owner:"Jainal Shah",                  purpose:"Test Server",            type:"RDS, DB Server",         os:"Windows Server 2025 Standard",      ip:"192.168.2.238"},
+  {sr:12, phys:"Surya",   name:"SYN-NAVISON-01",            owner:"Jainal Shah",                  purpose:"Test Server",            type:"Application, DB Server", os:"Windows Server 2025 Standard",      ip:"192.168.3.126"},
+  {sr:13, phys:"Surya",   name:"SVT-SRV-72",                owner:"Vaseem Lahori",                purpose:"Development Server",     type:"Web Server",             os:"Ubuntu",                            ip:"192.168.2.149"},
+  {sr:18, phys:"Surya",   name:"SVT-SRV-SONARCUBE-Project", owner:"Dhwanil Shah",                 purpose:"Production Server",      type:"Build Server",           os:"Ubuntu",                            ip:"192.168.2.165"},
+  {sr:26, phys:"Surya",   name:"Onecore",                   owner:"Kaushal Sukhdiya",             purpose:"Development Server",     type:"Application Server",     os:"Ubuntu",                            ip:"192.168.2.243"},
+  {sr:37, phys:"Surya",   name:"SVT-SRV-Matrix",            owner:"Infra",                        purpose:"Production Server",      type:"Web Server, DB Server",  os:"Windows 11 Pro",                    ip:"192.168.3.97"},
+  {sr:38, phys:"Surya",   name:"SVT-SRV-Eliant",            owner:"Manish Patel",                 purpose:"Client Server",          type:"Application",            os:"Windows 11 Pro",                    ip:"192.168.2.125"},
+  {sr:39, phys:"Surya",   name:"SVT-SRV-HRMS",              owner:"Dhara Agarwal",                purpose:"Production Server",      type:"Web Server, DB Server",  os:"Windows 11 Pro",                    ip:"192.168.2.76"},
+  {sr:51, phys:"Surya",   name:"SYN-FO-03",                 owner:"Jainal Shah",                  purpose:"Test Server",            type:"RDS, DB Server",         os:"Windows Server 2025 Datacenter",    ip:"192.168.3.153"},
+  {sr:53, phys:"Surya",   name:"SVT-SRV-TS-INTERVIEW",      owner:"Foram Jaguwala",               purpose:"QA & Production Server", type:"Video Processing",       os:"Ubuntu Server 24.04",               ip:"192.168.2.96"},
+  {sr:60, phys:"Surya",   name:"Veeam-01",                  owner:"Infra",                        purpose:"Backup Server",          type:"Backup Server",          os:"Windows 11 Pro",                    ip:"192.168.3.229"},
+  {sr:62, phys:"Surya",   name:"Veeam-03",                  owner:"Infra",                        purpose:"Backup Server",          type:"Backup Server",          os:"Windows 11 Pro",                    ip:"192.168.3.238"},
+  {sr:64, phys:"Surya",   name:"SVT-SRV-MONGODB",           owner:"Sumit Udani",                  purpose:"MongoDB Server",         type:"Database Server",        os:"Linux (ubuntu 24.04)",              ip:"192.168.3.246"},
+  {sr:65, phys:"Surya",   name:"Worker-04",                 owner:"Sumit Udani",                  purpose:"Kubernetes Worker",      type:"Kubernetes Cluster",     os:"Rocky Linux 9.7",                   ip:"192.168.3.140"},
+  {sr:66, phys:"Surya",   name:"Worker-07",                 owner:"Sumit Udani",                  purpose:"Kubernetes Worker",      type:"Kubernetes Cluster",     os:"Rocky Linux 9.7",                   ip:"192.168.3.63"},
+  {sr:67, phys:"Surya",   name:"SVT-SRV-MYSQL",             owner:"Sumit Udani",                  purpose:"Database Server",        type:"Database Server",        os:"Rocky Linux 9.7",                   ip:"192.168.3.160"},
+  {sr:68, phys:"Surya",   name:"SVT-SRV-HRMS-PR",           owner:"Dhara Agarwal",                purpose:"Production Server",      type:"Web Server, DB Server",  os:"Windows 11 Pro",                    ip:"192.168.3.22"},
+  {sr:69, phys:"Surya",   name:"SVT-SRV-MB4-NEW",           owner:"Jainal Shah",                  purpose:"Test Server",            type:"Web Server",             os:"Windows Server 2025 Datacenter",    ip:"192.168.3.244"},
+  // ── URANUS (19 VMs) ──
+  {sr:6,  phys:"Uranus",  name:"SVT-SRV-Sonar",             owner:"Dhwanil Shah",                 purpose:"Production Server",      type:"Deployment Server",      os:"Windows Server 2019 Standard",      ip:"192.168.3.4"},
+  {sr:11, phys:"Uranus",  name:"SVT-SRV-PAYROLL",           owner:"Bharat Prajapati",             purpose:"Internal Server",        type:"Application",            os:"Windows 11 Pro",                    ip:"192.168.3.131"},
+  {sr:15, phys:"Uranus",  name:"SVT-SRV-Portal",            owner:"Krushna Rathod",               purpose:"Internal Server",        type:"Web Server",             os:"Ubuntu",                            ip:"192.168.2.195"},
+  {sr:20, phys:"Uranus",  name:"BC2022",                    owner:"Jainal Shah",                  purpose:"Test Server",            type:"Application, DB Server", os:"Windows Server 2025 Standard",      ip:"192.168.2.232"},
+  {sr:21, phys:"Uranus",  name:"SYN-EPLUSE-01",             owner:"Manish Patel / Chirag Patel",  purpose:"R&D",                    type:"R&D, DB Server",         os:"Windows Server 2025 Standard",      ip:"192.168.3.31"},
+  {sr:22, phys:"Uranus",  name:"SVT-SRV-Docker-04",         owner:"Dhwanil Shah",                 purpose:"Development Server",     type:"Application",            os:"Ubuntu",                            ip:"192.168.2.103"},
+  {sr:27, phys:"Uranus",  name:"SVT-SRV-LOGINGESTER",       owner:"Dhwanil Shah",                 purpose:"Azure VM Log Monitoring",type:"Web Server",             os:"Ubuntu Server 24.04",               ip:"192.168.2.108"},
+  {sr:28, phys:"Uranus",  name:"SVT-SRV-UB-TS",             owner:"Chirag Patel",                 purpose:"Production Server",      type:"Web Server",             os:"Ubuntu Server 24.04",               ip:"192.168.3.114"},
+  {sr:29, phys:"Uranus",  name:"SVT-SRV-UB-TS-DB",          owner:"Chirag Patel",                 purpose:"Production Server",      type:"Database Server",        os:"Ubuntu Server 24.04",               ip:"192.168.3.115"},
+  {sr:31, phys:"Uranus",  name:"SVT-SRV-PAYCRAFT-DB",       owner:"Kaushal Sukhdiya / Riyan",     purpose:"DB Server & Development",type:"Web Server, DB Server",  os:"Oracle Linux",                      ip:"192.168.2.206"},
+  {sr:32, phys:"Uranus",  name:"SVT-SRV-SFTP",              owner:"Infra",                        purpose:"SFTP Server",            type:"Syslog Server",          os:"Ubuntu",                            ip:"192.168.3.154"},
+  {sr:36, phys:"Uranus",  name:"svt-srv-syno-inference",    owner:"Infra",                        purpose:"AI Model",               type:"LLM",                    os:"Ubuntu",                            ip:"192.168.2.251"},
+  {sr:40, phys:"Uranus",  name:"SVT-SRV-ACCOUNT",           owner:"Bharat Prajapati",             purpose:"Internal Server",        type:"Application",            os:"Windows 11 Pro",                    ip:"192.168.2.47"},
+  {sr:50, phys:"Uranus",  name:"SVT-SRV-ADDS",              owner:"Infra",                        purpose:"AD",                     type:"AD",                     os:"Windows Server 2025 Standard",      ip:"192.168.2.8"},
+  {sr:54, phys:"Uranus",  name:"SVT-SRV-LLM",               owner:"Anant Vakeria",                purpose:"QA & Production Server", type:"LLM Training on Image",  os:"Windows 11 Pro",                    ip:"192.168.2.219"},
+  {sr:55, phys:"Uranus",  name:"svt-srv-k8s-lb",            owner:"Sumit Udani",                  purpose:"Harbor Repository",      type:"Internal Repo Server",   os:"Rocky Linux 10.1",                  ip:"192.168.2.250"},
+  {sr:59, phys:"Uranus",  name:"Veeam",                     owner:"Infra",                        purpose:"Backup Server",          type:"Backup Server",          os:"Windows 11 Pro",                    ip:"192.168.3.221"},
+  {sr:61, phys:"Uranus",  name:"Veeam-02",                  owner:"Infra",                        purpose:"Backup Server",          type:"Backup Server",          os:"Windows 11 Pro",                    ip:"192.168.3.248"},
+  // ── TEJAS (2 VMs) ──
+  {sr:33, phys:"Tejas",   name:"SVT-SRV-APP",               owner:"Infra",                        purpose:"QA & Development",       type:"Web Server",             os:"Windows 11 Pro",                    ip:"192.168.2.207"},
+  {sr:34, phys:"Tejas",   name:"SVT-SRV-DB",                owner:"Infra",                        purpose:"QA & Development",       type:"DB Server",              os:"Windows 11 Pro",                    ip:"192.168.3.185"},
+  // ── JUPITER (4 VMs) ──
+  {sr:56, phys:"Jupiter", name:"Master-01",                  owner:"Sumit Udani",                  purpose:"Kubernetes Master",      type:"Kubernetes Cluster",     os:"Rocky Linux 9.7",                   ip:"192.168.3.212"},
+  {sr:57, phys:"Jupiter", name:"Worker-01",                  owner:"Sumit Udani",                  purpose:"Kubernetes Worker",      type:"Kubernetes Cluster",     os:"Rocky Linux 9.7",                   ip:"192.168.3.181"},
+  {sr:58, phys:"Jupiter", name:"Worker-02",                  owner:"Sumit Udani",                  purpose:"Kubernetes Worker",      type:"Kubernetes Cluster",     os:"Rocky Linux 9.7",                   ip:"192.168.3.214"},
+  {sr:63, phys:"Jupiter", name:"Worker-03",                  owner:"Sumit Udani",                  purpose:"Kubernetes Worker",      type:"Kubernetes Cluster",     os:"Rocky Linux 9.7",                   ip:"192.168.3.214"},
+];
+
+const PHYS_ICON  = {Titan:"🟤",Pluto:"⚫",Surya:"☀️",Uranus:"🪐",Tejas:"🔥",Jupiter:"🔴"};
+const PHYS_COLOR = {Titan:"#4A2060",Pluto:"#2D2D2D",Surya:"#9B4A00",Uranus:"#004A60",Tejas:"#7A2000",Jupiter:"#7A3000"};
+const PHYS_ORDER = ["Titan","Pluto","Surya","Uranus","Tejas","Jupiter"];
+
+function osClass(os) {
+  const o = os.toLowerCase();
+  if(o.includes("2025"))  return "os-win25";
+  if(o.includes("2022"))  return "os-win22";
+  if(o.includes("2019"))  return "os-win19";
+  if(o.includes("windows 11")) return "os-win11";
+  if(o.includes("24.04")||(o.includes("linux")&&o.includes("24"))) return "os-u24";
+  if(o.includes("20.04")) return "os-u20";
+  if(o.includes("ubuntu")) return "os-ubuntu";
+  if(o.includes("oracle")) return "os-oracle";
+  if(o.includes("rocky"))  return "os-rocky";
+  return "os-ubuntu";
+}
+function osLabel(os) {
+  const o = os.toLowerCase();
+  if(o.includes("windows server 2025 datacenter")) return "⊞ WS 2025 DC";
+  if(o.includes("windows server 2025")) return "⊞ WS 2025";
+  if(o.includes("windows server 2022 datacenter")) return "⊞ WS 2022 DC";
+  if(o.includes("windows server 2022")) return "⊞ WS 2022";
+  if(o.includes("windows server 2019")) return "⊞ WS 2019";
+  if(o.includes("windows 11")) return "⊞ Win 11 Pro";
+  if(o.includes("24.04")||(o.includes("linux")&&o.includes("24"))) return "🐧 Ubuntu 24.04";
+  if(o.includes("20.04")) return "🐧 Ubuntu 20.04";
+  if(o.includes("ubuntu")) return "🐧 Ubuntu";
+  if(o.includes("oracle linux")) return "🔶 Oracle Linux";
+  if(o.includes("rocky linux 10")||o.includes("rocky linux release 10")) return "🪨 Rocky 10.1";
+  if(o.includes("rocky")) return "🪨 Rocky 9.7";
+  return os.length > 22 ? os.substring(0,22)+"…" : os;
+}
+
+function typeTagsHtml(type) {
+  return type.split(/[,\/]/).map(t => {
+    const t2 = t.trim().toLowerCase();
+    let cls = "tt-mon";
+    if(t2.includes("web"))                                            cls="tt-web";
+    else if(t2.includes("db")||t2.includes("database"))              cls="tt-db";
+    else if(t2.includes("application")||t2.includes("rds")||t2.includes("r&d")||t2.includes("file")||t2.includes("video")||t2.includes("repo")||t2.includes("backup")||t2.includes("kubernetes")||t2.includes("llm")||t2.includes("deployment")||t2.includes("server")) cls="tt-app";
+    else if(t2.includes("domain")||t2.includes(" ad")||t2==="ad"||t2.includes("controller")) cls="tt-dc";
+    else if(t2.includes("build")||t2.includes("ci")||t2.includes("deploy")) cls="tt-build";
+    else if(t2.includes("monitor")||t2.includes("syslog")||t2.includes("report")) cls="tt-mon";
+    return `<span class="type-tag ${cls}">${t.trim()}</span>`;
+  }).join("");
+}
+
+function purClass(pur) {
+  const p = pur.toLowerCase();
+  if(p.includes("production"))  return "pur-prod";
+  if(p.includes("development")) return "pur-dev";
+  if(p.includes("test"))        return "pur-test";
+  if(p.includes("internal"))    return "pur-int";
+  if(p==="ad"||p.includes("domain")) return "pur-ad";
+  if(p.includes("backup"))      return "pur-bk";
+  if(p.includes("r&d"))         return "pur-rd";
+  if(p.includes("qa"))          return "pur-qa";
+  if(p.includes("kubernetes"))  return "pur-rd";
+  if(p.includes("harbor")||p.includes("ai")||p.includes("mongo")||p.includes("sftp")||p.includes("sonar")||p.includes("client")) return "pur-oth";
+  return "pur-oth";
+}
+
+function render() {
+  const q   = document.getElementById("search").value.toLowerCase().trim();
+  const pf  = document.getElementById("physFilter").value;
+  const puf = document.getElementById("purposeFilter").value.toLowerCase();
+  const osf = document.getElementById("osFilter").value.toLowerCase();
+  const tf  = document.getElementById("typeFilter").value.toLowerCase();
+
+  const filtered = VMS.filter(v => {
+    const mq  = !q   || (v.name+v.owner+v.type+v.purpose+v.os+v.ip).toLowerCase().includes(q);
+    const mp  = !pf  || v.phys === pf;
+    const mpu = !puf || v.purpose.toLowerCase().includes(puf);
+    const mo  = !osf || v.os.toLowerCase().includes(osf);
+    const mt  = !tf  || v.type.toLowerCase().includes(tf);
+    return mq && mp && mpu && mo && mt;
+  });
+
+  document.getElementById("stat").textContent = `${filtered.length} VMs`;
+  const main = document.getElementById("main");
+  main.innerHTML = "";
+
+  const physList = PHYS_ORDER.filter(p => filtered.some(v => v.phys===p));
+  if(!filtered.length) {
+    main.innerHTML = '<div class="no-result">No VMs match your filters.</div>';
+    return;
+  }
+
+  physList.forEach(phys => {
+    const vms = filtered.filter(v => v.phys===phys);
+    const col = PHYS_COLOR[phys] || "#1a1a18";
+
+    const block = document.createElement("div");
+    block.className = "phys-block";
+    block.style.borderColor = col + "44";
+
+    const hdr = document.createElement("div");
+    hdr.className = "phys-hdr";
+    hdr.style.background = col;
+    hdr.innerHTML = `${PHYS_ICON[phys]||"🖥️"} &nbsp;${phys} <span class="phys-count">${vms.length} VM${vms.length>1?"s":""}</span>`;
+    block.appendChild(hdr);
+
+    const body = document.createElement("div");
+    body.className = "phys-body";
+
+    vms.forEach(v => {
+      const card = document.createElement("div");
+      card.className = "vm-card";
+      card.innerHTML = `
+        <div class="vm-top">
+          <span class="vm-name">${v.name}</span>
+          <span class="os-badge ${osClass(v.os)}">${osLabel(v.os)}</span>
+        </div>
+        <div class="vm-types">${typeTagsHtml(v.type)}</div>
+        <div class="vm-footer">
+          <span class="vm-owner">👤 ${v.owner||"—"}</span>
+          <span class="vm-ip">${v.ip}</span>
+        </div>
+        <div class="vm-meta2">
+          <span class="pur-badge ${purClass(v.purpose)}">${v.purpose}</span>
+          <span class="sr-label">#${v.sr}</span>
+        </div>
+      `;
+      body.appendChild(card);
+    });
+
+    block.appendChild(body);
+    main.appendChild(block);
+  });
+}
+
+render();
+</script>
+</body>
+</html>
